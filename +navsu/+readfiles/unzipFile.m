@@ -24,15 +24,15 @@ if ispc
     % Windows machines use the included copy of 7zip
     s = what('+navsu');
     
-    utilityPath = [s.path '/+thirdparty/7zip/'];
+    utilityPath = fullfile(s.path, '/+thirdparty/7zip/');
     
-    loc7zip = [utilityPath '7za.exe'];
+    loc7zip = fullfile(utilityPath ,'7za.exe');
     % Use 7zip to open!
-    [status,result] = system(['"' loc7zip '" -y x ' '"' filename '"' ' -o' '"' outLocation '"']);
+    [status,result] = system(['"' loc7zip '" -y x ' '"' filename '"' ' -o' '"' outLocation '\"']);
     
 else
     
-    if endswith(filename, '.zip', 'IgnoreCase', true), % {gunzip, uncompress}: these fail (tested on macOS 10.14)
+    if endsWith(filename, '.zip', 'IgnoreCase', true), % {gunzip, uncompress}: these fail (tested on macOS 10.14)
         
         try
             result = unzip(filename, outLocation); status = 0;            
@@ -40,7 +40,7 @@ else
             result = []; status = 1;
         end
         
-    elseif endswith(filename, '.gz', 'IgnoreCase', true),  % {unzip, uncompress}: these fail (tested on macOS 10.14)
+    elseif endsWith(filename, '.gz', 'IgnoreCase', true),  % {unzip, uncompress}: these fail (tested on macOS 10.14)
         
         % MATLAB built-in gunzip introduced before R2006a)
         try
@@ -52,7 +52,7 @@ else
         %   [status,result] = system(['gunzip ' filename]);
         
                 
-    elseif endswith(filename, '.Z'),
+    elseif endsWith(filename, '.Z'),
         
         % host machine's native executable
         [status,result] = system(['gunzip ' filename]);

@@ -1,5 +1,5 @@
-function [yearChange,dayChange] = ftpFile(yearList,dayList,ftpStruc,varargin)
-% ftpFile
+function [yearChange,dayChange] = curlFile(yearList,dayList,ftpStruc,netrcFile,cookieFile,varargin)
+% curlFile
 % DESCRIPTION:
 %   This should just be called by navsu.ftp.download. Downloads products
 %   or data from IGS ftp sites given a day, year, information pointing to
@@ -29,15 +29,15 @@ unzipFlag    = ftpStruc.unzipFlag;
 yearChange = [];
 dayChange  = [];
 
-if nargin >= 4
+if nargin >= 6
     val1 = varargin{1};
 end
-if nargin >= 5
+if nargin >= 7
     val2 = varargin{2};
 end
 %% Download available files that do not already exist in local directory
 % from ftp
-mw = ftp(ftpSite);
+% mw = ftp(ftpSite);
 
 for ddx = 1:length(dayList)
     dayNum = dayList(ddx);
@@ -57,26 +57,27 @@ for ddx = 1:length(dayList)
     ftpDir = eval(sourceFormat);
     
     % If we're not currently in the desired folder, go there.
-    if ~strcmp(cd(mw),ftpDir)
-        cd(mw,ftpDir);
-    end
+    sourcePath = [ftpSite ftpDir];
     
-    if ~exist(target_dir,'dir') && strcmp(fileFormat{1},'[''*'']')
-        mget(mw, '*', target_dir);
+    %check to see what we already have
+    llist = dir(target_dir);
+    
+    lname = {llist(:).name};
+    %     ldate = [llist(:).datenum];
+    
+    if matches(fileFormat{1},'[''*'']')
+        % download the entire directory
         change = 1;
+        navsu.ftp.curlDownloadDirectory(sourcePath,target_dir,netrcFile,cookieFile)
+        
     else
-        %check to see what we already have
-        llist = dir(target_dir);
-        
-        lname = {llist(:).name};
-        ldate = [llist(:).datenum];
-        
         change = 0;
-        rlist = dir(mw);
+        rlist = navsu.ftp.curlGetDirectoryContents(sourcePath,netrcFile,cookieFile);
+        
         for i = 1:length(rlist)
             %only download if we do not have it or the remote version is newer
             
-            serverName = rlist(i).name;
+            serverName = rlist{i};
             if isempty(lname)
                 have = 0;
             else
@@ -96,10 +97,10 @@ for ddx = 1:length(dayList)
                 end
             end
             
-            %             if (~have || rlist(i).datenum > ldate(idx)) && desired
-            if (~have || rlist(i).datenum > ldate(idx)) && desired
+            if ~have && desired
+                %                 mget(mw, serverName, target_dir);
                 
-                mget(mw, serverName, target_dir);
+                navsu.ftp.curlDownloadSingleFile([sourcePath serverName],target_dir,netrcFile,cookieFile);
                 change = 1;
                 
                 if unzipFlag
@@ -108,8 +109,9 @@ for ddx = 1:length(dayList)
             end
             
         end
-        
     end
+    
+    %     end
     if change
         disp(['File(s) updated on day ' int2str(dayNum)]);
         yearChange = [yearChange; Year];
@@ -117,7 +119,7 @@ for ddx = 1:length(dayList)
     end
     
 end
-close(mw);
+% close(mw);
 
 
 end
